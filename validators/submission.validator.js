@@ -32,20 +32,20 @@ const submissionSchema = Joi.object({
   // ── School fields (required only when student_type = 'school') ───────────
   school_standard_id: Joi.when('student_type', {
     is:        'school',
-    then:      Joi.number().integer().positive().required().messages({ 'any.required': 'Select your standard' }),
-    otherwise: Joi.number().integer().positive().empty('').optional(),
+    then:      Joi.string().trim().required().messages({ 'any.required': 'Select your standard' }),
+    otherwise: Joi.string().trim().empty('').optional(),
   }),
   school_board_id: Joi.when('student_type', {
     is:        'school',
-    then:      Joi.number().integer().positive().required().messages({ 'any.required': 'Select your board' }),
-    otherwise: Joi.number().integer().positive().empty('').optional(),
+    then:      Joi.string().trim().required().messages({ 'any.required': 'Select your board' }),
+    otherwise: Joi.string().trim().empty('').optional(),
   }),
 
   // ── College fields (required only when student_type = 'college') ─────────
   college_degree_id: Joi.when('student_type', {
     is:        'college',
-    then:      Joi.number().integer().positive().required().messages({ 'any.required': 'Select your degree' }),
-    otherwise: Joi.number().integer().positive().empty('').optional(),
+    then:      Joi.string().trim().required().messages({ 'any.required': 'Select your degree' }),
+    otherwise: Joi.string().trim().empty('').optional(),
   }),
   semester: Joi.when('student_type', {
     is:        'college',

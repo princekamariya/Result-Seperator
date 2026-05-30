@@ -18,9 +18,8 @@ const submissionSchema = Joi.object({
   whatsapp_number:     phone.required().messages({ 'any.required': 'WhatsApp number is required' }),
   email:               Joi.string().trim().email().empty('').optional().messages({ 'string.email': 'Enter a valid email address' }),
   student_phone:       phone.empty('').optional(),
-  residential_address: Joi.string().trim().min(5).max(500).required().messages({
+  residential_address: Joi.string().trim().required().messages({
     'any.required': 'Residential address is required',
-    'string.min':   'Address is too short',
   }),
 
   // ── Education Type ───────────────────────────────────────────────────────

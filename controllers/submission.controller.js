@@ -1,5 +1,5 @@
 const { submissionSchema }    = require('../validators/submission.validator');
-const { insert }              = require('../utils/db');
+const { insert, query }       = require('../utils/db');
 const { uploadFile }          = require('../utils/cloudinary');
 
 // POST /api/submissions
@@ -11,6 +11,38 @@ const createSubmission = async (req, res) => {
       return res.status(422).json({
         success: false,
         errors:  error.details.map(d => d.message),
+      });
+    }
+
+    // Duplicate check — same year + phones + name combination
+    const dupParams = [
+      value.result_year,
+      value.parents_phone,
+      value.whatsapp_number,
+      value.first_name,
+      value.last_name,
+      value.middle_name || null,
+    ];
+    let dupSql = `
+      SELECT id FROM student_submissions
+      WHERE result_year = ?
+        AND parents_phone = ?
+        AND whatsapp_number = ?
+        AND first_name = ?
+        AND last_name = ?
+        AND middle_name <=> ?
+    `;
+    if (value.email) {
+      dupSql += ' AND email = ?';
+      dupParams.push(value.email);
+    }
+    dupSql += ' LIMIT 1';
+
+    const [existing] = await query(dupSql, dupParams);
+    if (existing) {
+      return res.status(409).json({
+        success: false,
+        errors: ['A submission with the same details already exists for this result year.'],
       });
     }
 

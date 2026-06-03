@@ -1,46 +1,52 @@
-/**
- * server.js — Entry point
- * Node Result Separator API
- */
+require("dotenv").config();
+const express = require("express");
+const cors    = require("cors");
+const logger  = require("./utils/logger");
 
-require('dotenv').config();
-const express  = require('express');
-const cors     = require('cors');
-const path     = require('path');
+const dropdownRoutes = require("./routes/dropdown.routes");
+const submissionRoutes = require("./routes/submission.routes");
+const adminRoutes      = require("./routes/admin.routes");
 
-const dropdownRoutes   = require('./routes/dropdown.routes');
-const submissionRoutes = require('./routes/submission.routes');
-
-const app  = express();
+const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ─── Middleware ───────────────────────────────────────────────────────────────
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve the student form from public/
-app.use(express.static(path.join(__dirname, 'public')));
+app.use("/api/dropdowns", dropdownRoutes);
+app.use("/api/submissions", submissionRoutes);
+app.use("/api/admin", adminRoutes);
 
-// ─── API Routes ───────────────────────────────────────────────────────────────
-app.use('/api/dropdowns',   dropdownRoutes);
-app.use('/api/submissions', submissionRoutes);
+app.get("/api/health", async (_req, res) => {
+    const checks = { db: false, cloudinary: false };
 
-// ─── Health check ─────────────────────────────────────────────────────────────
-app.get('/api/health', (_req, res) => res.json({ status: 'ok', ts: new Date() }));
+    try {
+        await require("./config/db").query("SELECT 1");
+        checks.db = true;
+    } catch {}
 
-// ─── 404 ──────────────────────────────────────────────────────────────────────
-app.use((_req, res) => res.status(404).json({ success: false, message: 'Route not found' }));
+    try {
+        await require("./config/cloudinary").api.ping();
+        checks.cloudinary = true;
+    } catch {}
 
-// ─── Global error handler ─────────────────────────────────────────────────────
-app.use((err, _req, res, _next) => {
-  console.error('Unhandled error:', err);
-  res.status(500).json({ success: false, message: err.message || 'Internal server error' });
+    const ok = checks.db && checks.cloudinary;
+    res.status(ok ? 200 : 503).json({ success: ok, checks });
 });
 
-// ─── Start ────────────────────────────────────────────────────────────────────
+app.use((_req, res) =>
+    res.status(404).json({ success: false, message: "Route not found" }),
+);
+
+app.use((err, _req, res, _next) => {
+    logger.error("Unhandled error: " + err.message);
+    res.status(500).json({
+        success: false,
+        message: err.message || "Internal server error",
+    });
+});
+
 app.listen(PORT, () => {
-  console.log(`\n🚀  Server running → http://localhost:${PORT}`);
-  console.log(`📋  Form          → http://localhost:${PORT}/`);
-  console.log(`🔌  API base      → http://localhost:${PORT}/api\n`);
+    logger.info("Server running on port " + PORT);
 });

@@ -1,12 +1,11 @@
 const twilio = require('twilio');
 
-const client = twilio(
-  process.env.TWILIO_ACCOUNT_SID,
-  process.env.TWILIO_AUTH_TOKEN
-);
-
 const sendWhatsApp = async (to, message) => {
   if (!to || !message) throw new Error('sendWhatsApp: to and message are required');
+  const client = twilio(
+    process.env.TWILIO_ACCOUNT_SID,
+    process.env.TWILIO_AUTH_TOKEN
+  );
   const e164 = to.startsWith('+') ? to : `+91${to}`;
   await client.messages.create({
     from: process.env.TWILIO_WHATSAPP_FROM,

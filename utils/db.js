@@ -1,51 +1,61 @@
 const pool = require('../config/db');
 
-// Run any raw SQL query
-const query = async (sql, params = []) => {
-  const [rows] = await pool.execute(sql, params);
-  return rows;
+// Run any raw SQL query, returns all matching rows
+const query = async (sql, values) => {
+  const result = await pool.query(sql, values);
+  return result.rows;
 };
 
-// Get all rows matching conditions  { col: val, ... }
+// Get all rows from a table that match the given conditions
+// where is an object like { col: value, col2: value2 }
 const findMany = async (table, where = {}, { orderBy = '', limit = null } = {}) => {
   const keys = Object.keys(where);
+  const values = Object.values(where);
+
   const whereClause = keys.length
-    ? 'WHERE ' + keys.map(k => `\`${k}\` = ?`).join(' AND ')
+    ? 'WHERE ' + keys.map((k, i) => `"${k}" = $${i + 1}`).join(' AND ')
     : '';
   const orderClause = orderBy ? `ORDER BY ${orderBy}` : '';
-  const limitClause = limit   ? `LIMIT ${Number(limit)}`  : '';
+  const limitClause = limit ? `LIMIT ${Number(limit)}` : '';
 
-  const sql = `SELECT * FROM \`${table}\` ${whereClause} ${orderClause} ${limitClause}`.trim();
-  return query(sql, Object.values(where));
+  const sql = `SELECT * FROM "${table}" ${whereClause} ${orderClause} ${limitClause}`.trim();
+  return query(sql, values);
 };
 
-// Get single row
+// Get a single row (returns null if not found)
 const findOne = async (table, where = {}) => {
   const rows = await findMany(table, where, { limit: 1 });
   return rows[0] || null;
 };
 
-// Insert a row — returns insertId
+// Insert a row into a table, returns the new row id
 const insert = async (table, data) => {
-  const cols   = Object.keys(data).map(k => `\`${k}\``).join(', ');
-  const placeholders = Object.keys(data).map(() => '?').join(', ');
-  const [res]  = await pool.execute(
-    `INSERT INTO \`${table}\` (${cols}) VALUES (${placeholders})`,
-    Object.values(data)
+  const keys = Object.keys(data);
+  const values = Object.values(data);
+  const cols = keys.map(k => `"${k}"`).join(', ');
+  const placeholders = keys.map((_, i) => `$${i + 1}`).join(', ');
+
+  const result = await pool.query(
+    `INSERT INTO "${table}" (${cols}) VALUES (${placeholders}) RETURNING id`,
+    values
   );
-  return res.insertId;
+  return result.rows[0].id;
 };
 
-// Update rows — returns affectedRows
+// Update rows in a table, returns number of rows changed
 const update = async (table, data, where) => {
-  const setClause   = Object.keys(data).map(k  => `\`${k}\` = ?`).join(', ');
-  const whereClause = Object.keys(where).map(k => `\`${k}\` = ?`).join(' AND ');
-  const params      = [...Object.values(data), ...Object.values(where)];
-  const [res] = await pool.execute(
-    `UPDATE \`${table}\` SET ${setClause} WHERE ${whereClause}`,
-    params
+  const dataKeys = Object.keys(data);
+  const whereKeys = Object.keys(where);
+
+  const setClause   = dataKeys.map((k, i) => `"${k}" = $${i + 1}`).join(', ');
+  const whereClause = whereKeys.map((k, i) => `"${k}" = $${dataKeys.length + i + 1}`).join(' AND ');
+  const values = [...Object.values(data), ...Object.values(where)];
+
+  const result = await pool.query(
+    `UPDATE "${table}" SET ${setClause} WHERE ${whereClause}`,
+    values
   );
-  return res.affectedRows;
+  return result.rowCount;
 };
 
 module.exports = { query, findMany, findOne, insert, update };

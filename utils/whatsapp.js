@@ -6,6 +6,7 @@ const client = twilio(
 );
 
 const sendWhatsApp = async (to, message) => {
+  if (!to || !message) throw new Error('sendWhatsApp: to and message are required');
   const e164 = to.startsWith('+') ? to : `+91${to}`;
   await client.messages.create({
     from: process.env.TWILIO_WHATSAPP_FROM,

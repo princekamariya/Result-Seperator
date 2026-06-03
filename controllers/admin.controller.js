@@ -38,4 +38,49 @@ const logout = (_req, res) => {
   res.json({ success: true, message: 'Logged out' });
 };
 
-module.exports = { login, logout };
+const listSubmissions = async (req, res) => {
+  try {
+    const { status, student_type, standard, year } = req.query;
+
+    const conditions = [];
+    const values     = [];
+    let   idx        = 1;
+
+    if (status) {
+      conditions.push(`submission_status = $${idx++}`);
+      values.push(status);
+    }
+    if (student_type) {
+      conditions.push(`student_type = $${idx++}`);
+      values.push(student_type);
+    }
+    if (standard) {
+      if (student_type === 'school') {
+        conditions.push(`school_standard_id = $${idx++}`);
+        values.push(standard);
+      } else if (student_type === 'college') {
+        conditions.push(`college_degree_id = $${idx++}`);
+        values.push(standard);
+      } else {
+        conditions.push(`(school_standard_id = $${idx} OR college_degree_id = $${idx})`);
+        values.push(standard);
+        idx++;
+      }
+    }
+    if (year) {
+      conditions.push(`result_year = $${idx++}`);
+      values.push(Number(year));
+    }
+
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+    const sql   = `SELECT * FROM student_submissions ${where} ORDER BY submitted_at DESC`;
+    const data  = await query(sql, values);
+
+    res.json({ success: true, count: data.length, data });
+  } catch (err) {
+    logger.error('listSubmissions: ' + err.message);
+    res.status(500).json({ success: false, message: 'Something went wrong' });
+  }
+};
+
+module.exports = { login, logout, listSubmissions };

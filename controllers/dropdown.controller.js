@@ -1,12 +1,13 @@
-const { query } = require('../utils/db');
+const { query }  = require('../utils/db');
+const logger     = require('../utils/logger');
 
 // GET /api/dropdowns/all — single call used by the form on page load
 const getAll = async (_req, res) => {
   try {
     const [standards, boards, degrees] = await Promise.all([
-      query('SELECT id, key_name, value, category FROM school_standards WHERE is_active = 1 ORDER BY sort_order'),
-      query('SELECT id, key_name, value            FROM school_boards     WHERE is_active = 1 ORDER BY id'),
-      query('SELECT id, key_name, value            FROM college_degrees   WHERE is_active = 1 ORDER BY sort_order'),
+      query('SELECT id, key_name, value, category FROM school_standards WHERE is_active = true ORDER BY sort_order'),
+      query('SELECT id, key_name, value            FROM school_boards     WHERE is_active = true ORDER BY id'),
+      query('SELECT id, key_name, value            FROM college_degrees   WHERE is_active = true ORDER BY sort_order'),
     ]);
 
     res.json({
@@ -18,7 +19,7 @@ const getAll = async (_req, res) => {
       },
     });
   } catch (err) {
-    console.error('getAll:', err);
+    logger.error('getAll: ' + err.message);
     res.status(500).json({ success: false, message: 'Failed to load dropdown data' });
   }
 };
@@ -26,10 +27,10 @@ const getAll = async (_req, res) => {
 // GET /api/dropdowns/standards
 const getStandards = async (_req, res) => {
   try {
-    const rows = await query('SELECT id, key_name, value, category FROM school_standards WHERE is_active = 1 ORDER BY sort_order');
+    const rows = await query('SELECT id, key_name, value, category FROM school_standards WHERE is_active = true ORDER BY sort_order');
     res.json({ success: true, data: rows.map(r => ({ id: r.id, key: r.key_name, value: r.value, category: r.category })) });
   } catch (err) {
-    console.error('getStandards:', err);
+    logger.error('getStandards: ' + err.message);
     res.status(500).json({ success: false, message: 'Failed to load standards' });
   }
 };
@@ -37,10 +38,10 @@ const getStandards = async (_req, res) => {
 // GET /api/dropdowns/boards
 const getBoards = async (_req, res) => {
   try {
-    const rows = await query('SELECT id, key_name, value FROM school_boards WHERE is_active = 1 ORDER BY id');
+    const rows = await query('SELECT id, key_name, value FROM school_boards WHERE is_active = true ORDER BY id');
     res.json({ success: true, data: rows.map(r => ({ id: r.id, key: r.key_name, value: r.value })) });
   } catch (err) {
-    console.error('getBoards:', err);
+    logger.error('getBoards: ' + err.message);
     res.status(500).json({ success: false, message: 'Failed to load boards' });
   }
 };
@@ -48,10 +49,10 @@ const getBoards = async (_req, res) => {
 // GET /api/dropdowns/degrees
 const getDegrees = async (_req, res) => {
   try {
-    const rows = await query('SELECT id, key_name, value FROM college_degrees WHERE is_active = 1 ORDER BY sort_order');
+    const rows = await query('SELECT id, key_name, value FROM college_degrees WHERE is_active = true ORDER BY sort_order');
     res.json({ success: true, data: rows.map(r => ({ id: r.id, key: r.key_name, value: r.value })) });
   } catch (err) {
-    console.error('getDegrees:', err);
+    logger.error('getDegrees: ' + err.message);
     res.status(500).json({ success: false, message: 'Failed to load degrees' });
   }
 };

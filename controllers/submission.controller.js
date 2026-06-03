@@ -1,6 +1,7 @@
 const { submissionSchema }    = require('../validators/submission.validator');
 const { insert, query }       = require('../utils/db');
 const { uploadFile }          = require('../utils/cloudinary');
+const logger                  = require('../utils/logger');
 
 // POST /api/submissions
 const createSubmission = async (req, res) => {
@@ -25,15 +26,15 @@ const createSubmission = async (req, res) => {
     ];
     let dupSql = `
       SELECT id FROM student_submissions
-      WHERE result_year = ?
-        AND parents_phone = ?
-        AND whatsapp_number = ?
-        AND first_name = ?
-        AND last_name = ?
-        AND middle_name <=> ?
+      WHERE result_year = $1
+        AND parents_phone = $2
+        AND whatsapp_number = $3
+        AND first_name = $4
+        AND last_name = $5
+        AND middle_name IS NOT DISTINCT FROM $6
     `;
     if (value.email) {
-      dupSql += ' AND email = ?';
+      dupSql += ' AND email = $7';
       dupParams.push(value.email);
     }
     dupSql += ' LIMIT 1';
@@ -90,7 +91,7 @@ const createSubmission = async (req, res) => {
       submission_id: id,
     });
   } catch (err) {
-    console.error('createSubmission:', err);
+    logger.error('createSubmission: ' + err.message);
     res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
   }
 };

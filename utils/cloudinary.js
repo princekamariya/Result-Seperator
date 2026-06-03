@@ -1,6 +1,6 @@
 const cloudinary = require('../config/cloudinary');
 
-// Upload a buffer to Cloudinary — returns { url, publicId }
+// Upload a buffer to Cloudinary
 const uploadFile = (buffer, folder = 'result_separator') =>
   new Promise((resolve, reject) => {
     cloudinary.uploader

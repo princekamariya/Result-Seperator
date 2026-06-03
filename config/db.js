@@ -1,31 +1,23 @@
-/**
- * config/db.js
- * MySQL connection pool using mysql2/promise
- */
-
-const mysql = require('mysql2/promise');
+const { Pool } = require('pg');
 require('dotenv').config();
+const logger   = require('../utils/logger');
 
-const pool = mysql.createPool({
-  host:             process.env.DB_HOST     || 'localhost',
-  user:             process.env.DB_USER,
-  password:         process.env.DB_PASSWORD,
-  database:         process.env.DB_NAME,
-  port:             Number(process.env.DB_PORT) || 3306,
-  waitForConnections: true,
-  connectionLimit:  10,
-  queueLimit:       0,
-  timezone:         '+05:30',   // IST
+const pool = new Pool({
+  host:     process.env.DB_HOST     || 'localhost',
+  user:     process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  port:     Number(process.env.DB_PORT) || 5432,
+  ssl:      process.env.DB_HOST?.includes('neon.tech') ? { rejectUnauthorized: false } : false,
 });
 
-// quick connectivity check at startup
-pool.getConnection()
-  .then(conn => {
-    console.log('✅  MySQL connected →', process.env.DB_NAME);
-    conn.release();
+pool.connect()
+  .then(client => {
+    logger.info('Database connected to ' + process.env.DB_NAME);
+    client.release();
   })
   .catch(err => {
-    console.error('❌  MySQL connection failed:', err.message);
+    logger.error('Database connection failed: ' + err.message);
     process.exit(1);
   });
 

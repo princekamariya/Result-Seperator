@@ -83,4 +83,64 @@ const listSubmissions = async (req, res) => {
   }
 };
 
-module.exports = { login, logout, listSubmissions };
+const approveSubmission = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const submission = await findOne('student_submissions', { id: Number(id) });
+    if (!submission) {
+      return res.status(404).json({ success: false, message: 'Submission not found' });
+    }
+    if (submission.submission_status !== 'pending') {
+      return res.status(409).json({ success: false, message: 'Submission already processed' });
+    }
+
+    await update('student_submissions', { submission_status: 'verified' }, { id: Number(id) });
+
+    try {
+      await sendWhatsApp(
+        submission.whatsapp_number,
+        `Congratulations ${submission.first_name} ${submission.last_name}! Your result has been verified`
+      );
+    } catch (waErr) {
+      logger.error('WhatsApp send failed (approve #' + id + '): ' + waErr.message);
+    }
+
+    res.json({ success: true, message: 'Submission approved' });
+  } catch (err) {
+    logger.error('approveSubmission: ' + err.message);
+    res.status(500).json({ success: false, message: 'Something went wrong' });
+  }
+};
+
+const rejectSubmission = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const submission = await findOne('student_submissions', { id: Number(id) });
+    if (!submission) {
+      return res.status(404).json({ success: false, message: 'Submission not found' });
+    }
+    if (submission.submission_status !== 'pending') {
+      return res.status(409).json({ success: false, message: 'Submission already processed' });
+    }
+
+    await update('student_submissions', { submission_status: 'rejected' }, { id: Number(id) });
+
+    try {
+      await sendWhatsApp(
+        submission.whatsapp_number,
+        `Dear ${submission.first_name} ${submission.last_name}, unfortunately your result submission was not approved`
+      );
+    } catch (waErr) {
+      logger.error('WhatsApp send failed (reject #' + id + '): ' + waErr.message);
+    }
+
+    res.json({ success: true, message: 'Submission rejected' });
+  } catch (err) {
+    logger.error('rejectSubmission: ' + err.message);
+    res.status(500).json({ success: false, message: 'Something went wrong' });
+  }
+};
+
+module.exports = { login, logout, listSubmissions, approveSubmission, rejectSubmission };

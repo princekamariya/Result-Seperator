@@ -394,8 +394,8 @@ async function seed() {
     console.log(collegeDegrees.length + ' college degrees done');
 
     console.log('Seeding admin_users');
-    const adminEmail    = 'admin@resultseparator.com';
-    const adminPassword = 'Admin@123';
+    const adminEmail    = process.env.ADMIN_EMAIL    || 'admin@resultseparator.com';
+    const adminPassword = process.env.ADMIN_PASSWORD || 'Admin@123';
     const hashedPw      = await bcrypt.hash(adminPassword, Number(process.env.SALT_ROUNDS) || 10);
     await client.query(
       `INSERT INTO admin_users (email, password, is_active)
@@ -403,7 +403,7 @@ async function seed() {
        ON CONFLICT (email) DO UPDATE SET password = EXCLUDED.password`,
       [adminEmail, hashedPw]
     );
-    console.log('Admin user seeded — email: ' + adminEmail + ', password: ' + adminPassword);
+    console.log('Admin user seeded — email: ' + adminEmail);
 
     console.log('Seeding complete');
   } catch (err) {

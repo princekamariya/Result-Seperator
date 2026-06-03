@@ -1,107 +1,127 @@
--- ============================================================
---  Result Separator — Database Schema
--- ============================================================
+-- PostgreSQL schema for result_separator
 
-CREATE DATABASE IF NOT EXISTS result_separator
-  CHARACTER SET utf8mb4
-  COLLATE utf8mb4_unicode_ci;
+-- ENUM types
+CREATE TYPE student_type_enum         AS ENUM ('school', 'college');
+CREATE TYPE submission_status_enum    AS ENUM ('pending', 'verified', 'rejected');
+CREATE TYPE standard_category_enum   AS ENUM ('pre_school', 'primary', 'middle', 'secondary', 'higher_secondary');
 
-USE result_separator;
+-- Function that sets updated_at to current time before any UPDATE
+CREATE OR REPLACE FUNCTION set_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = CURRENT_TIMESTAMP;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
--- ─────────────────────────────────────────────────────────────
---  LOOKUP / MASTER TABLES
--- ─────────────────────────────────────────────────────────────
+-- MASTER TABLES
 
 CREATE TABLE IF NOT EXISTS school_standards (
-  id         INT          AUTO_INCREMENT PRIMARY KEY,
-  key_name   VARCHAR(50)  NOT NULL UNIQUE,
-  value      VARCHAR(100) NOT NULL,
-  category   ENUM('pre_school','primary','middle','secondary','higher_secondary') NOT NULL,
-  sort_order SMALLINT     NOT NULL DEFAULT 0,
-  is_active  TINYINT(1)   NOT NULL DEFAULT 1,
-  created_at TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  id         SERIAL                 PRIMARY KEY,
+  key_name   VARCHAR(50)            NOT NULL UNIQUE,
+  value      VARCHAR(100)           NOT NULL,
+  category   standard_category_enum NOT NULL,
+  sort_order SMALLINT               NOT NULL DEFAULT 0,
+  is_active  BOOLEAN                NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMP              DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP              DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TRIGGER trg_school_standards_updated_at
+  BEFORE UPDATE ON school_standards
+  FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
 
 CREATE TABLE IF NOT EXISTS school_boards (
-  id         INT          AUTO_INCREMENT PRIMARY KEY,
+  id         SERIAL       PRIMARY KEY,
   key_name   VARCHAR(50)  NOT NULL UNIQUE,
   value      VARCHAR(200) NOT NULL,
-  is_active  TINYINT(1)   NOT NULL DEFAULT 1,
+  is_active  BOOLEAN      NOT NULL DEFAULT TRUE,
   created_at TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  updated_at TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TRIGGER trg_school_boards_updated_at
+  BEFORE UPDATE ON school_boards
+  FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
 
 CREATE TABLE IF NOT EXISTS college_degrees (
-  id         INT          AUTO_INCREMENT PRIMARY KEY,
-  key_name   VARCHAR(100) NOT NULL UNIQUE,
-  value      VARCHAR(250) NOT NULL,
-  sort_order SMALLINT     NOT NULL DEFAULT 0,
-  is_active  TINYINT(1)   NOT NULL DEFAULT 1,
-  created_at TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  id         SERIAL        PRIMARY KEY,
+  key_name   VARCHAR(100)  NOT NULL UNIQUE,
+  value      VARCHAR(250)  NOT NULL,
+  sort_order SMALLINT      NOT NULL DEFAULT 0,
+  is_active  BOOLEAN       NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP     DEFAULT CURRENT_TIMESTAMP
+);
 
--- ─────────────────────────────────────────────────────────────
---  MAIN TABLE — Student Submissions
--- ─────────────────────────────────────────────────────────────
+CREATE TRIGGER trg_college_degrees_updated_at
+  BEFORE UPDATE ON college_degrees
+  FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+
+-- MAIN TABLE for Student Submissions
 
 CREATE TABLE IF NOT EXISTS student_submissions (
-  id          INT AUTO_INCREMENT PRIMARY KEY,
+  id          SERIAL PRIMARY KEY,
 
-  -- Personal
   first_name  VARCHAR(100) NOT NULL,
   middle_name VARCHAR(100),
   last_name   VARCHAR(100) NOT NULL,
   mother_name VARCHAR(100) NOT NULL,
 
-  -- Contact
-  parents_phone       VARCHAR(15)  NOT NULL,
-  whatsapp_number     VARCHAR(15)  NOT NULL,
+  parents_phone       VARCHAR(15) NOT NULL,
+  whatsapp_number     VARCHAR(15) NOT NULL,
   email               VARCHAR(150),
   student_phone       VARCHAR(15),
 
-  -- Address
   residential_address TEXT NOT NULL,
 
-  -- Education type
-  student_type ENUM('school','college') NOT NULL,
+  student_type student_type_enum NOT NULL,
 
-  -- School-specific (NULL when college)
-  school_standard_id INT,
-  school_board_id    INT,
+  school_standard_id VARCHAR(50),
+  school_board_id    VARCHAR(50),
 
-  -- College-specific (NULL when school)
-  college_degree_id INT,
-  semester          TINYINT UNSIGNED,
+  college_degree_id VARCHAR(100),
+  semester          SMALLINT,
   university_name   VARCHAR(250),
 
-  -- Result
-  result_year             YEAR         NOT NULL,
-  percentage              DECIMAL(5,2) NOT NULL,
-  result_image_url        VARCHAR(500),
-  result_image_public_id  VARCHAR(200),
+  result_year            SMALLINT     NOT NULL,
+  percentage             NUMERIC(5,2) NOT NULL,
+  result_image_url       VARCHAR(500),
+  result_image_public_id VARCHAR(200),
 
-  -- Admin
-  submission_status ENUM('pending','verified','rejected') NOT NULL DEFAULT 'pending',
+  submission_status submission_status_enum NOT NULL DEFAULT 'pending',
   rejection_reason  TEXT,
-  rank_position     INT UNSIGNED,
-  prize_amount      DECIMAL(10,2),
+  rank_position     INTEGER,
+  prize_amount      NUMERIC(10,2),
 
-  -- Timestamps
   submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  updated_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-  -- Foreign Keys
-  CONSTRAINT fk_school_standard FOREIGN KEY (school_standard_id) REFERENCES school_standards(id) ON DELETE SET NULL ON UPDATE CASCADE,
-  CONSTRAINT fk_school_board    FOREIGN KEY (school_board_id)    REFERENCES school_boards(id)    ON DELETE SET NULL ON UPDATE CASCADE,
-  CONSTRAINT fk_college_degree  FOREIGN KEY (college_degree_id)  REFERENCES college_degrees(id)  ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT fk_school_standard FOREIGN KEY (school_standard_id) REFERENCES school_standards(key_name) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT fk_school_board    FOREIGN KEY (school_board_id)    REFERENCES school_boards(key_name)    ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT fk_college_degree  FOREIGN KEY (college_degree_id)  REFERENCES college_degrees(key_name)  ON DELETE SET NULL ON UPDATE CASCADE
+);
 
-  -- Indexes
-  INDEX idx_student_type      (student_type),
-  INDEX idx_result_year       (result_year),
-  INDEX idx_submission_status (submission_status),
-  INDEX idx_percentage        (percentage DESC),
-  INDEX idx_submitted_at      (submitted_at)
+CREATE INDEX idx_student_type      ON student_submissions (student_type);
+CREATE INDEX idx_result_year       ON student_submissions (result_year);
+CREATE INDEX idx_submission_status ON student_submissions (submission_status);
+CREATE INDEX idx_percentage        ON student_submissions (percentage DESC);
+CREATE INDEX idx_submitted_at      ON student_submissions (submitted_at);
 
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TRIGGER trg_student_submissions_updated_at
+  BEFORE UPDATE ON student_submissions
+  FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+
+-- ADMIN USERS
+
+CREATE TABLE IF NOT EXISTS admin_users (
+  id         SERIAL       PRIMARY KEY,
+  email      VARCHAR(150) NOT NULL UNIQUE,
+  password   VARCHAR(255) NOT NULL,
+  is_active  BOOLEAN      NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
+);

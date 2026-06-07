@@ -5,7 +5,7 @@ const uploadFile = (buffer, folder = 'result_separator') =>
   new Promise((resolve, reject) => {
     cloudinary.uploader
       .upload_stream(
-        { folder, resource_type: 'auto', allowed_formats: ['jpg', 'jpeg', 'png', 'pdf'] },
+        { folder, resource_type: 'auto', access_mode: 'public', allowed_formats: ['jpg', 'jpeg', 'png', 'pdf'] },
         (err, result) => (err ? reject(err) : resolve({ url: result.secure_url, publicId: result.public_id }))
       )
       .end(buffer);

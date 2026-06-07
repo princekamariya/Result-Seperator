@@ -1,11 +1,17 @@
 const cloudinary = require('../config/cloudinary');
 
-// Upload a buffer to Cloudinary
+const isPdf = (buffer) => buffer.slice(0, 4).toString() === '%PDF';
+
+// Upload a buffer to Cloudinary.
+// PDFs are converted to JPEG (first page) to avoid delivery restrictions.
 const uploadFile = (buffer, folder = 'result_separator') =>
   new Promise((resolve, reject) => {
+    const opts = isPdf(buffer)
+      ? { folder, resource_type: 'image', format: 'jpg', allowed_formats: ['pdf'] }
+      : { folder, resource_type: 'image', allowed_formats: ['jpg', 'jpeg', 'png'] };
+
     cloudinary.uploader
-      .upload_stream(
-        { folder, resource_type: 'auto', access_mode: 'public', allowed_formats: ['jpg', 'jpeg', 'png', 'pdf'] },
+      .upload_stream(opts,
         (err, result) => (err ? reject(err) : resolve({ url: result.secure_url, publicId: result.public_id }))
       )
       .end(buffer);

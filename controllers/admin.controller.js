@@ -116,6 +116,11 @@ const approveSubmission = async (req, res) => {
 const rejectSubmission = async (req, res) => {
   try {
     const { id } = req.params;
+    const { rejection_reason } = req.body;
+
+    if (!rejection_reason || !rejection_reason.trim()) {
+      return res.status(400).json({ success: false, message: 'Rejection reason is required' });
+    }
 
     const submission = await findOne('student_submissions', { id: Number(id) });
     if (!submission) {
@@ -125,12 +130,16 @@ const rejectSubmission = async (req, res) => {
       return res.status(409).json({ success: false, message: 'Submission already processed' });
     }
 
-    await update('student_submissions', { submission_status: 'rejected' }, { id: Number(id) });
+    await update(
+      'student_submissions',
+      { submission_status: 'rejected', rejection_reason: rejection_reason.trim() },
+      { id: Number(id) }
+    );
 
     try {
       await sendWhatsApp(
         submission.whatsapp_number,
-        `Dear ${submission.first_name} ${submission.last_name}, unfortunately your result submission was not approved`
+        `Dear ${submission.first_name} ${submission.last_name}, your result submission was not approved.\n\nReason: ${rejection_reason.trim()}`
       );
     } catch (waErr) {
       logger.error('WhatsApp send failed (reject #' + id + '): ' + waErr.message);

@@ -2,6 +2,7 @@ const bcrypt          = require('bcrypt');
 const jwt             = require('jsonwebtoken');
 const { findOne, query, update } = require('../utils/db');
 const { sendWhatsApp }           = require('../utils/whatsapp');
+const { getSignedUrl }           = require('../utils/cloudinary');
 const logger                     = require('../utils/logger');
 
 const login = async (req, res) => {
@@ -76,7 +77,14 @@ const listSubmissions = async (req, res) => {
     const sql   = `SELECT * FROM student_submissions ${where} ORDER BY submitted_at DESC`;
     const data  = await query(sql, values);
 
-    res.json({ success: true, count: data.length, data });
+    const result = data.map(row => {
+      if (row.result_image_public_id && row.result_image_url?.endsWith('.pdf')) {
+        return { ...row, result_image_url: getSignedUrl(row.result_image_public_id) };
+      }
+      return row;
+    });
+
+    res.json({ success: true, count: result.length, data: result });
   } catch (err) {
     logger.error('listSubmissions: ' + err.message);
     res.status(500).json({ success: false, message: 'Something went wrong' });

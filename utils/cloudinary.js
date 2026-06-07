@@ -17,4 +17,12 @@ const deleteFile = (publicId) =>
     ? cloudinary.uploader.destroy(publicId, { resource_type: 'auto' })
     : Promise.resolve();
 
-module.exports = { uploadFile, deleteFile };
+// Generate a signed URL for a resource (used for PDFs that require auth)
+const getSignedUrl = (publicId, resourceType = 'image') =>
+  cloudinary.url(publicId, {
+    resource_type: resourceType,
+    sign_url:      true,
+    secure:        true,
+  });
+
+module.exports = { uploadFile, deleteFile, getSignedUrl };

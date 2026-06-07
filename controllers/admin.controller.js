@@ -74,7 +74,14 @@ const listSubmissions = async (req, res) => {
 
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
     const sql   = `SELECT * FROM student_submissions ${where} ORDER BY submitted_at DESC`;
-    const data  = await query(sql, values);
+    const rows  = await query(sql, values);
+
+    const data = rows.map(row => ({
+      ...row,
+      // Always return an array. New submissions have result_image_urls stored.
+      // Old submissions fall back to single-element array.
+      result_image_urls: row.result_image_urls ?? [row.result_image_url],
+    }));
 
     res.json({ success: true, count: data.length, data });
   } catch (err) {
@@ -116,7 +123,7 @@ const approveSubmission = async (req, res) => {
 const rejectSubmission = async (req, res) => {
   try {
     const { id } = req.params;
-    const { rejection_reason } = req.body;
+    const { rejection_reason } = req.body || {};
 
     if (!rejection_reason || !rejection_reason.trim()) {
       return res.status(400).json({ success: false, message: 'Rejection reason is required' });

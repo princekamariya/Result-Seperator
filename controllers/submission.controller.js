@@ -53,7 +53,7 @@ const createSubmission = async (req, res) => {
     }
 
     // Upload marksheet to Cloudinary
-    const { url, publicId } = await uploadFile(req.file.buffer);
+    const { url, publicId, imageUrls } = await uploadFile(req.file.buffer);
 
     const isSchool  = value.student_type === 'school';
     const isCollege = value.student_type === 'college';
@@ -79,10 +79,11 @@ const createSubmission = async (req, res) => {
       semester:            isCollege ? value.semester            : null,
       university_name:     isCollege ? (value.university_name ?? null) : null,
 
-      result_year:           value.result_year,
-      percentage:            value.percentage,
-      result_image_url:      url,
+      result_year:            value.result_year,
+      percentage:             value.percentage,
+      result_image_url:       url,
       result_image_public_id: publicId,
+      result_image_urls:      JSON.stringify(imageUrls),
     });
 
     res.status(201).json({

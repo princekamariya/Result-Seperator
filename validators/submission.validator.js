@@ -55,6 +55,15 @@ const submissionSchema = Joi.object({
                }),
     otherwise: Joi.number().integer().min(1).max(10).empty('').optional(),
   }),
+  other_degree_name: Joi.when('student_type', {
+    is:   'college',
+    then: Joi.when('college_degree_id', {
+      is:        'other',
+      then:      Joi.string().trim().max(250).required().messages({ 'any.required': 'Please enter your degree name' }),
+      otherwise: Joi.string().trim().max(250).empty('').optional(),
+    }),
+    otherwise: Joi.string().trim().max(250).empty('').optional(),
+  }),
   university_name: Joi.string().trim().max(250).empty('').optional(),
 
   // ── Result ───────────────────────────────────────────────────────────────

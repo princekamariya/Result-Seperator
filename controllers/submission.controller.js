@@ -76,6 +76,7 @@ const createSubmission = async (req, res) => {
 
       // College-specific
       college_degree_id:   isCollege ? value.college_degree_id  : null,
+      other_degree_name:   isCollege && value.college_degree_id === 'other' ? (value.other_degree_name ?? null) : null,
       semester:            isCollege ? value.semester            : null,
       university_name:     isCollege ? (value.university_name ?? null) : null,
 

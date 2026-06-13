@@ -84,6 +84,7 @@ CREATE TABLE IF NOT EXISTS student_submissions (
   school_board_id    VARCHAR(50),
 
   college_degree_id VARCHAR(100),
+  other_degree_name VARCHAR(250),
   semester          SMALLINT,
   university_name   VARCHAR(250),
 

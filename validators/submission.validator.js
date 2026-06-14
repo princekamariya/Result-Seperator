@@ -48,8 +48,7 @@ const submissionSchema = Joi.object({
   }),
   semester: Joi.when('student_type', {
     is:        'college',
-    then:      Joi.number().integer().min(1).max(10).required().messages({
-                 'any.required': 'Select your semester',
+    then:      Joi.number().integer().min(1).max(10).messages({
                  'number.min':   'Semester must be between 1 and 10',
                  'number.max':   'Semester must be between 1 and 10',
                }),
@@ -73,8 +72,7 @@ const submissionSchema = Joi.object({
     'number.max':   'Enter a valid result year',
     'number.base':  'Enter a valid result year',
   }),
-  percentage: Joi.number().min(0).max(100).precision(2).required().messages({
-    'any.required': 'Percentage is required',
+  percentage: Joi.number().min(0).max(100).precision(2).messages({
     'number.min':   'Percentage must be between 0 and 100',
     'number.max':   'Percentage must be between 0 and 100',
     'number.base':  'Enter a valid percentage',

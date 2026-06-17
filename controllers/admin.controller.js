@@ -42,7 +42,7 @@ const listSubmissions = async (req, res) => {
   try {
     const { status, student_type, standard, year } = req.query;
 
-    const conditions = [];
+    const conditions = ['is_active = true'];
     const values     = [];
     let   idx        = 1;
 
@@ -159,4 +159,25 @@ const rejectSubmission = async (req, res) => {
   }
 };
 
-module.exports = { login, logout, listSubmissions, approveSubmission, rejectSubmission };
+const deleteSubmission = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const submission = await findOne('student_submissions', { id: Number(id) });
+    if (!submission) {
+      return res.status(404).json({ success: false, message: 'Submission not found' });
+    }
+    if (!submission.is_active) {
+      return res.status(409).json({ success: false, message: 'Submission already deleted' });
+    }
+
+    await update('student_submissions', { is_active: false }, { id: Number(id) });
+
+    res.json({ success: true, message: 'Submission deleted' });
+  } catch (err) {
+    logger.error('deleteSubmission: ' + err.message);
+    res.status(500).json({ success: false, message: 'Something went wrong' });
+  }
+};
+
+module.exports = { login, logout, listSubmissions, approveSubmission, rejectSubmission, deleteSubmission };

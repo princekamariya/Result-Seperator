@@ -98,6 +98,8 @@ CREATE TABLE IF NOT EXISTS student_submissions (
   rank_position     INTEGER,
   prize_amount      NUMERIC(10,2),
 
+  is_active    BOOLEAN   NOT NULL DEFAULT TRUE,
+
   submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 

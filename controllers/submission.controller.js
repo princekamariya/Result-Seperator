@@ -27,6 +27,7 @@ const createSubmission = async (req, res) => {
     let dupSql = `
       SELECT id FROM student_submissions
       WHERE is_active = true
+        AND submission_status = 'pending'
         AND result_year = $1
         AND parents_phone = $2
         AND whatsapp_number = $3

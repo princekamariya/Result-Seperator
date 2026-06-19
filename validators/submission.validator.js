@@ -87,7 +87,8 @@ const submissionSchema = Joi.object({
                 "number.min": "Semester must be between 1 and 10",
                 "number.max": "Semester must be between 1 and 10",
             })
-            .allow(null, "")
+            .empty("")
+            .default(null)
             .optional(),
         otherwise: Joi.number().integer().min(1).max(10).empty("").optional(),
     }),
@@ -127,7 +128,8 @@ const submissionSchema = Joi.object({
             "number.max": "Percentage must be between 0 and 100",
             "number.base": "Enter a valid percentage",
         })
-        .allow(null, "")
+        .empty("")
+        .default(null)
         .optional(),
 });
 

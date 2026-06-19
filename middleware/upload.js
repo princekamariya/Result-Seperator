@@ -9,7 +9,7 @@ const upload = multer({
       ? cb(null, true)
       : cb(new Error('Only JPG, PNG or PDF files are allowed'));
   },
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
 });
 
 module.exports = upload;
